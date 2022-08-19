@@ -57,7 +57,6 @@ class WeatherController {
         cityName = fetchDataCity[1]['address_components'][i]['long_name'];
       }
     }
-
     return cityName;
   }
 
