@@ -29,15 +29,18 @@ class WeatherController {
   // Current Location User
   Future<WeatherModels?> getDetailWeather(
       {required String lat, required String long}) async {
+    print(lat + ", " + long);
+
     Uri url = Uri.parse(
-        "https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=$lat&longitude=$long&localityLanguage=en");
+        "http://api.openweathermap.org/geo/1.0/reverse?lat=$lat&lon=$long&appid=0ab0be7030506c822d48cf2423c4f7a4");
     final response = await http.get(url);
 
-    Map<String, dynamic> data =
-        (jsonDecode(response.body) as Map<String, dynamic>);
+    List data = (jsonDecode(response.body));
+
+    String cityName = data[0]['name'];
 
     final responseWeather = await http.get(Uri.parse(
-        "https://api.openweathermap.org/data/2.5/weather?q=${data['city']}&appid=0ab0be7030506c822d48cf2423c4f7a4&units=metric"));
+        "https://api.openweathermap.org/data/2.5/weather?q=$cityName&appid=0ab0be7030506c822d48cf2423c4f7a4&units=metric"));
     var fetchDataCurrentCity = jsonDecode(responseWeather.body);
 
     return WeatherModels.fromJson(fetchDataCurrentCity);
