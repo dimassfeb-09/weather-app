@@ -1,10 +1,14 @@
 import 'package:card_loading/card_loading.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:weatherapp/weather_models.dart';
 
 import 'get_weather.dart';
 
-void main() => runApp(MyApp());
+void main() => runApp(
+      MyApp(),
+    );
 
 class MyApp extends StatefulWidget {
   @override
@@ -13,11 +17,11 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   WeatherController weather = WeatherController();
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Material App',
+      debugShowCheckedModeBanner: false,
+      title: 'Weather App',
       home: Scaffold(
         backgroundColor: Color(0xFFE9EDFA),
         appBar: AppBar(
@@ -43,11 +47,12 @@ class _MyAppState extends State<MyApp> {
                   Positioned(
                     top: 30,
                     left: 20,
-                    child: FutureBuilder(
-                      future: weather.getLocation(),
+                    child: FutureBuilder<Position>(
+                      future: weather.getLatLang(),
                       builder: (BuildContext context, AsyncSnapshot snapshot) {
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
+                          // Loading
                           return Container(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,9 +109,12 @@ class _MyAppState extends State<MyApp> {
                             ),
                           );
                         } else {
+                          // Get City Name
+                          Position position = snapshot.data;
                           return FutureBuilder<WeatherModels?>(
-                            future: weather.getLocationWeather(
-                                cityName: snapshot.data),
+                            future: weather.getDetailWeather(
+                                lat: position.latitude.toString(),
+                                long: position.longitude.toString()),
                             builder: (BuildContext context, snapshot) {
                               WeatherModels? weatherModels = snapshot.data;
                               if (weatherModels?.name == null) {
@@ -116,6 +124,7 @@ class _MyAppState extends State<MyApp> {
                               } else {
                                 return Container(
                                   child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.start,
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
@@ -182,7 +191,8 @@ class _MyAppState extends State<MyApp> {
                       },
                     ),
                   ),
-                  Positioned(bottom: 0, child: SearchCit()),
+                  Dialog(),
+                  Positioned(bottom: 0, child: SearchCity()),
                 ],
               ),
             ],
@@ -193,27 +203,96 @@ class _MyAppState extends State<MyApp> {
   }
 }
 
-class SearchCit extends StatefulWidget {
+class Dialog extends StatefulWidget {
+  const Dialog({
+    Key? key,
+  }) : super(key: key);
+
   @override
-  State<SearchCit> createState() => _SearchCitState();
+  State<Dialog> createState() => _DialogState();
+}
+
+class _DialogState extends State<Dialog> {
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      top: 10,
+      right: 20,
+      child: IconButton(
+        onPressed: () => showAlertDialog(context),
+        icon: Icon(Icons.info),
+      ),
+    );
+  }
+}
+
+showAlertDialog(BuildContext context) {
+  // set up the AlertDialog
+  AlertDialog alert = AlertDialog(
+    title: Text("About Application"),
+    content: Container(
+      height: 100,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("Version"),
+              Text("1.0"),
+            ],
+          ),
+          SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("Icon Credit"),
+              Text("flaticon.com"),
+            ],
+          ),
+          SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("Bg Credit"),
+              Text("iconscout.com"),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
+
+  // show the dialog
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return alert;
+    },
+  );
+}
+
+class SearchCity extends StatefulWidget {
+  @override
+  State<SearchCity> createState() => _SearchCityState();
 }
 
 WeatherController weather = WeatherController();
 
-class _SearchCitState extends State<SearchCit> {
+class _SearchCityState extends State<SearchCity> {
   @override
   Widget build(BuildContext context) {
     return Container(
       height: 300,
+      margin: EdgeInsets.all(10),
       child: Column(
         children: [
           Row(
             children: [
               Container(
                 height: 50,
-                width: 280,
-                margin: EdgeInsets.all(20),
-                padding: EdgeInsets.only(left: 10),
+                width: 250,
+                padding: EdgeInsets.only(left: 20),
                 decoration: BoxDecoration(
                   color: Color(0xFFB0C1F1),
                   borderRadius: BorderRadius.circular(10),
@@ -227,6 +306,11 @@ class _SearchCitState extends State<SearchCit> {
                   ],
                 ),
                 child: TextField(
+                  textInputAction: TextInputAction.go,
+                  onSubmitted: (value) {
+                    weather.getData();
+                    setState(() {});
+                  },
                   controller: weather.city,
                   style: TextStyle(
                     color: Color(0xFF4E5E9B),
@@ -243,6 +327,7 @@ class _SearchCitState extends State<SearchCit> {
                   ),
                 ),
               ),
+              SizedBox(width: 20),
               GestureDetector(
                 onTap: () {
                   weather.getData();
@@ -271,6 +356,7 @@ class _SearchCitState extends State<SearchCit> {
               ),
             ],
           ),
+          SizedBox(height: 20),
           FutureBuilder<WeatherModels?>(
             future: weather.getData(),
             builder: (BuildContext context, AsyncSnapshot snapshot) {
@@ -323,7 +409,7 @@ class _SearchCitState extends State<SearchCit> {
                 );
               } else {
                 return Container(
-                  margin: EdgeInsets.all(20),
+                  width: 320,
                   padding: EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
